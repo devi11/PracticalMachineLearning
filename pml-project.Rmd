@@ -1,0 +1,79 @@
+# PRACTICAL MACHINE LEARNING PROJECT
+## Executive Summary
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively.In this project,goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants and predict the manner in which they did the exercise.
+
+##Data
+The training data for this project are available here: 
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+The test data are available here: 
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+##Method
+1. To clean the data
+2. To split the training dataset into sub-test and sub-train sets
+3. To build the model on sub-train set and test on sub-test set
+4. Validate on testing data set
+5. Estimate the errors
+##Analysis
+```{r echo=TRUE, results='hide'}
+# loading the required libraries
+library(caret)
+library(randomForest)
+```
+```{r, echo=TRUE}
+# reading the training and test datasets
+training<-read.csv("C:/Users/Praveen Gorthy/Desktop/assg/specdata/pml-training.csv")
+testing<-read.csv("C:/Users/Praveen Gorthy/Desktop/assg/specdata/pml-testing.csv")
+table(training$classe)
+```
+Setting the seed and dividing the training data into sub-training and sub-testing data sets
+```{r echo=TRUE}
+set.seed(333111)
+shorttrain <- createDataPartition(y=training$classe,p=0.6,list=F)
+trainsub <- training[shorttrain,]
+testsub <- training[-shorttrain,]
+```
+##Cleaning the data
+Removing the near zero values  from training data set
+```{r echo=TRUE}
+nearzero1 <- nearZeroVar(trainsub)
+training<- trainsub[,-nearzero1]
+```
+Columns containing many NA's were removed from training dataset
+```{r,echo=TRUE}
+trainnew <- training[, which(as.numeric(colSums(is.na(training)))==0)]
+```
+The datasets have been reduced by removing descriptive columns from training and testing datasets retaining only the useful predictor variables
+```{r echo=TRUE}
+trainnew <- trainnew[,-(1:7)]
+```
+##Regression analysis
+Fitting the model using the random forest method over the sub train data set
+```{r echo=TRUE}
+modfit<- randomForest(classe~.,data=trainnew,importance=T)
+```
+##Predicting 
+The model thus buld is used to predict over the sub-test data set 
+```{r echo=TRUE}
+predictTestsub<-predict(modfit,testsub)
+
+confusionMatrix(predictTestsub,testsub$classe)
+```
+The out of sample accuracy is 99.42% , the error is about 0.58%. 
+##Testing 
+Testing the prediction on the actual testing data set provided
+the results are:
+```{r echo=TRUE}
+predictTest<-predict(modfit,testing)
+predictTest
+```
+## Prediction submmission
+```{r echo=True} 
+pml_write_files = function(x){
+  n = length(x)
+  for(i in 1:n){
+    filename = paste0("problem_id_",i,".txt")
+    write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+  }
+}
+```
+
